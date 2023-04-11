@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import {spawn} from "child_process";
+import { spawn } from "child_process";
 
 /**
  * Variant of exec that connects stdout, stderr, and stdin, mostly so console
@@ -11,7 +11,9 @@ import {spawn} from "child_process";
 export default function run(command: string): Promise<void> {
   console.log(`> ${command}`);
   return new Promise((resolve, reject) => {
-    const childProcess = spawn("/bin/bash", ["-c", command], {stdio: "inherit"});
+    const childProcess = process.platform === "win32"
+      ? spawn("bash.exe", ["-c", command], { stdio: "inherit" })
+      : spawn("/bin/bash", ["-c", command], { stdio: "inherit" });
     childProcess.on("close", (code) => {
       if (code === 0) {
         resolve();
