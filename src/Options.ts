@@ -59,7 +59,7 @@ export interface Options {
    * If specified, the imports transform does not attempt to change dynamic
    * import() expressions into require() calls.
    */
-  preserveDynamicImport?: boolean;
+  preserveDynamicImport?: boolean | string;
   /**
    * Only relevant when targeting ESM (i.e. when the imports transform is *not*
    * specified). This flag changes the behavior of TS require imports:

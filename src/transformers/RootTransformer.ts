@@ -95,7 +95,7 @@ export default class RootTransformer {
           enableLegacyBabel5ModuleInterop,
           Boolean(options.enableLegacyTypeScriptModuleInterop),
           transforms.includes("typescript"),
-          Boolean(options.preserveDynamicImport),
+          options.preserveDynamicImport ?? false,
         ),
       );
     } else {

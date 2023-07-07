@@ -36,7 +36,7 @@ export default class CJSImportTransformer extends Transformer {
     readonly enableLegacyBabel5ModuleInterop: boolean,
     readonly enableLegacyTypeScriptModuleInterop: boolean,
     readonly isTypeScriptTransformEnabled: boolean,
-    readonly preserveDynamicImport: boolean,
+    readonly preserveDynamicImport: boolean | string,
   ) {
     super();
     this.declarationInfo = isTypeScriptTransformEnabled
@@ -122,7 +122,11 @@ export default class CJSImportTransformer extends Transformer {
     if (this.tokens.matches2(tt._import, tt.parenL)) {
       if (this.preserveDynamicImport) {
         // Bail out, only making progress for this one token.
-        this.tokens.copyToken();
+        if (typeof this.preserveDynamicImport === "string") {
+          this.tokens.replaceToken(this.preserveDynamicImport);
+        } else {
+          this.tokens.copyToken();
+        }
         return;
       }
       const requireWrapper = this.enableLegacyTypeScriptModuleInterop

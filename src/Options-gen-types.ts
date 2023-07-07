@@ -25,7 +25,7 @@ export const Options = t.iface([], {
   jsxImportSource: t.opt("string"),
   jsxPragma: t.opt("string"),
   jsxFragmentPragma: t.opt("string"),
-  preserveDynamicImport: t.opt("boolean"),
+  preserveDynamicImport: t.opt(t.union("boolean", "string")),
   injectCreateRequireForImportRequire: t.opt("boolean"),
   enableLegacyTypeScriptModuleInterop: t.opt("boolean"),
   enableLegacyBabel5ModuleInterop: t.opt("boolean"),
