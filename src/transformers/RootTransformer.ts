@@ -23,6 +23,8 @@ export interface RootTransformerResult {
   // Array mapping input token index to optional string index position in the
   // output code.
   mappings: Array<number | undefined>;
+  deps?: Array<string>;
+  dynamicDeps?: Array<string>;
 }
 
 export default class RootTransformer {
@@ -34,6 +36,7 @@ export default class RootTransformer {
   private isReactHotLoaderTransformEnabled: boolean;
   private disableESTransforms: boolean;
   private helperManager: HelperManager;
+  private cjsTransformer: CJSImportTransformer | null = null;
 
   constructor(
     sucraseContext: SucraseContext,
@@ -85,7 +88,7 @@ export default class RootTransformer {
         throw new Error("Expected non-null importProcessor with imports transform enabled.");
       }
       this.transformers.push(
-        new CJSImportTransformer(
+        (this.cjsTransformer = new CJSImportTransformer(
           this,
           tokenProcessor,
           importProcessor,
@@ -96,7 +99,7 @@ export default class RootTransformer {
           Boolean(options.enableLegacyTypeScriptModuleInterop),
           transforms.includes("typescript"),
           options.preserveDynamicImport ?? false,
-        ),
+        )),
       );
     } else {
       this.transformers.push(
@@ -159,13 +162,24 @@ export default class RootTransformer {
         // The hashbang line has no tokens, so shifting the tokens to account
         // for prefix can happen normally.
         mappings: this.shiftMappings(result.mappings, prefix.length),
+        ...this.getDepsResult(),
       };
     } else {
       return {
         code: prefix + code + suffix,
         mappings: this.shiftMappings(result.mappings, prefix.length),
+        ...this.getDepsResult(),
       };
     }
+  }
+
+  getDepsResult(): {
+    deps: Array<string>;
+    dynamicDeps: Array<string>;
+  } | null {
+    return this.cjsTransformer
+      ? {deps: [...this.cjsTransformer.deps], dynamicDeps: [...this.cjsTransformer.dynamicDeps]}
+      : null;
   }
 
   processBalancedCode(): void {

@@ -15,6 +15,8 @@ import getTSImportedNames from "./util/getTSImportedNames";
 export interface TransformResult {
   code: string;
   sourceMap?: RawSourceMap;
+  deps?: Array<string>;
+  dynamicDeps?: Array<string>;
 }
 
 export interface SucraseContext {
@@ -43,7 +45,11 @@ export function transform(code: string, options: Options): TransformResult {
       options,
     );
     const transformerResult = transformer.transform();
-    let result: TransformResult = {code: transformerResult.code};
+    let result: TransformResult = {
+      code: transformerResult.code,
+      deps: transformerResult.deps,
+      dynamicDeps: transformerResult.dynamicDeps,
+    };
     if (options.sourceMapOptions) {
       if (!options.filePath) {
         throw new Error("filePath must be specified when generating a source map.");

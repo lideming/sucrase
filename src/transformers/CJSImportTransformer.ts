@@ -25,6 +25,8 @@ export default class CJSImportTransformer extends Transformer {
   private hadNamedExport: boolean = false;
   private hadDefaultExport: boolean = false;
   private declarationInfo: DeclarationInfo;
+  readonly deps = new Set<string>();
+  readonly dynamicDeps = new Set<string>();
 
   constructor(
     readonly rootTransformer: RootTransformer,
@@ -68,6 +70,18 @@ export default class CJSImportTransformer extends Transformer {
       this.processImport();
       return true;
     }
+    if (
+      this.tokens.matches2(tt.name, tt.parenL) &&
+      this.tokens.identifierName() === "require" &&
+      !this.tokens.tokenAtRelativeIndex(1).shadowsGlobal
+    ) {
+      const prevToken = this.tokens.tokenAtRelativeIndex(-1);
+      if (prevToken && prevToken.type !== tt.dot && prevToken.type !== tt.questionDot) {
+        if (this.processRequire()) {
+          return true;
+        }
+      }
+    }
     if (this.tokens.matches2(tt._export, tt.eq)) {
       this.tokens.replaceToken("module.exports");
       return true;
@@ -105,8 +119,24 @@ export default class CJSImportTransformer extends Transformer {
     } else {
       // Otherwise, switch `import` to `const`.
       this.tokens.replaceToken("const");
+
+      // FIXME: stringValueAtIndex does not process escapes
+      const path = this.tokens.stringValueAtIndex(this.tokens.currentIndex() + 4);
+      this.deps.add(path);
     }
     return true;
+  }
+
+  private processRequire(): boolean {
+    // Already matched `require(`
+    // `require("dep")`
+    if (this.tokens.matches2AtIndex(this.tokens.currentIndex() + 2, tt.string, tt.parenR)) {
+      const path = this.tokens.stringValueAtIndex(this.tokens.currentIndex() + 2);
+      this.deps.add(path);
+      for (let i = 0; i < 4; i++) this.tokens.copyToken();
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -120,6 +150,9 @@ export default class CJSImportTransformer extends Transformer {
    */
   private processImport(): void {
     if (this.tokens.matches2(tt._import, tt.parenL)) {
+      if (this.tokens.matches4(tt._import, tt.parenL, tt.string, tt.parenR)) {
+        this.dynamicDeps.add(this.tokens.stringValueAtIndex(this.tokens.currentIndex() + 2));
+      }
       if (this.preserveDynamicImport) {
         // Bail out, only making progress for this one token.
         if (typeof this.preserveDynamicImport === "string") {
@@ -151,6 +184,7 @@ export default class CJSImportTransformer extends Transformer {
       this.tokens.removeToken();
     } else {
       const path = this.tokens.stringValue();
+      this.deps.add(path);
       this.tokens.replaceTokenTrimmingLeftWhitespace(this.importProcessor.claimImportCode(path));
       this.tokens.appendCode(this.importProcessor.claimImportCode(path));
     }
@@ -832,6 +866,7 @@ export default class CJSImportTransformer extends Transformer {
       // and use the Object.defineProperty code from ImportProcessor.
       this.tokens.removeToken();
       const path = this.tokens.stringValue();
+      this.deps.add(path);
       this.tokens.replaceTokenTrimmingLeftWhitespace(this.importProcessor.claimImportCode(path));
       removeMaybeImportAttributes(this.tokens);
     } else {
@@ -850,6 +885,7 @@ export default class CJSImportTransformer extends Transformer {
       this.tokens.removeToken();
     }
     const path = this.tokens.stringValue();
+    this.deps.add(path);
     this.tokens.replaceTokenTrimmingLeftWhitespace(this.importProcessor.claimImportCode(path));
     removeMaybeImportAttributes(this.tokens);
     if (this.tokens.matches1(tt.semi)) {
