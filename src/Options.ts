@@ -88,6 +88,7 @@ export interface Options {
    * File path to use in error messages, React display names, and source maps.
    */
   filePath?: string;
+  disableAddUseStrict?: boolean;
 }
 
 export function validateOptions(options: Options): void {

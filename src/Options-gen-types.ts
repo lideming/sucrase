@@ -31,6 +31,7 @@ export const Options = t.iface([], {
   enableLegacyBabel5ModuleInterop: t.opt("boolean"),
   sourceMapOptions: t.opt("SourceMapOptions"),
   filePath: t.opt("string"),
+  disableAddUseStrict: t.opt("boolean"),
 });
 
 const exportedTypeSuite: t.ITypeSuite = {

@@ -32,7 +32,7 @@ export default class RootTransformer {
   private nameManager: NameManager;
   private tokens: TokenProcessor;
   private generatedVariables: Array<string> = [];
-  private isImportsTransformEnabled: boolean;
+  private shouldAddUseStrict: boolean;
   private isReactHotLoaderTransformEnabled: boolean;
   private disableESTransforms: boolean;
   private helperManager: HelperManager;
@@ -48,7 +48,7 @@ export default class RootTransformer {
     this.helperManager = sucraseContext.helperManager;
     const {tokenProcessor, importProcessor} = sucraseContext;
     this.tokens = tokenProcessor;
-    this.isImportsTransformEnabled = transforms.includes("imports");
+    this.shouldAddUseStrict = transforms.includes("imports") && !options.disableAddUseStrict;
     this.isReactHotLoaderTransformEnabled = transforms.includes("react-hot-loader");
     this.disableESTransforms = Boolean(options.disableESTransforms);
 
@@ -134,9 +134,8 @@ export default class RootTransformer {
   transform(): RootTransformerResult {
     this.tokens.reset();
     this.processBalancedCode();
-    const shouldAddUseStrict = this.isImportsTransformEnabled;
     // "use strict" always needs to be first, so override the normal transformer order.
-    let prefix = shouldAddUseStrict ? '"use strict";' : "";
+    let prefix = this.shouldAddUseStrict ? '"use strict";' : "";
     for (const transformer of this.transformers) {
       prefix += transformer.getPrefixCode();
     }
